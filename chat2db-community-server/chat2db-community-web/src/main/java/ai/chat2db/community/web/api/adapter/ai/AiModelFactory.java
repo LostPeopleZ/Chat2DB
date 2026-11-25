@@ -15,6 +15,8 @@ import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.NoopApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -60,6 +62,9 @@ public class AiModelFactory {
         if (provider == AiProviderEnum.OPENAI) {
             return openAiClient(runtimeModel, retryTemplate);
         }
+        if (provider == AiProviderEnum.KIMI || provider == AiProviderEnum.WORKBUDDY2) {
+            return openAiClient(runtimeModel, retryTemplate);
+        }
         if (provider == AiProviderEnum.MINIMAX) {
             if (StringUtils.containsIgnoreCase(runtimeModel.getBaseUrl(), "/anthropic")) {
                 return claudeClient(runtimeModel, retryTemplate);
@@ -85,7 +90,10 @@ public class AiModelFactory {
         logUpstreamTarget("openai",
                 StringUtils.defaultIfBlank(runtimeModel.getBaseUrl(), OpenAiApiConstants.DEFAULT_BASE_URL) + "/v1/chat/completions",
                 buildOpenAiHeaderView(runtimeModel, null));
-        OpenAiApi.Builder apiBuilder = OpenAiApi.builder().apiKey(runtimeModel.getApiKey());
+        OpenAiApi.Builder apiBuilder = OpenAiApi.builder()
+                .apiKey(StringUtils.isBlank(runtimeModel.getApiKey())
+                        ? new NoopApiKey()
+                        : new SimpleApiKey(runtimeModel.getApiKey()));
         if (StringUtils.isNotBlank(runtimeModel.getBaseUrl())) {
             apiBuilder.baseUrl(runtimeModel.getBaseUrl());
             apiBuilder.restClientBuilder(RestClient.builder().requestInterceptor(new ZoerClientHttpRequestInterceptor()));
@@ -203,7 +211,9 @@ public class AiModelFactory {
     private Map<String, Object> buildOpenAiHeaderView(AiRuntimeModel runtimeModel,
                                                       Object proxyHeaders) {
         Map<String, Object> headerView = new LinkedHashMap<>();
-        headerView.put(HttpHeaders.AUTHORIZATION, maskSecret("Bearer " + runtimeModel.getApiKey()));
+        if (StringUtils.isNotBlank(runtimeModel.getApiKey())) {
+            headerView.put(HttpHeaders.AUTHORIZATION, maskSecret("Bearer " + runtimeModel.getApiKey()));
+        }
         headerView.put(HttpHeaders.CONTENT_TYPE, "application/json");
         return headerView;
     }

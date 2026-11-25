@@ -58,6 +58,7 @@ public class AiModelConfigServiceImpl implements IAiModelConfigService {
     private static final String DEFAULT_GEMINI_LOCATION = "us-central1";
     private static final String DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
     private static final String DEFAULT_MINIMAX_BASE_URL = "https://api.minimax.io/v1";
+    private static final String DEFAULT_KIMI_BASE_URL = "https://api.moonshot.cn/v1";
     private static final int TEST_ERROR_BODY_MAX_LENGTH = 2000;
     private static final String CONFIG_VALUE_PREFIX = "config:";
     private static final String PRESET_VALUE_PREFIX = "preset:";
@@ -219,6 +220,15 @@ public class AiModelConfigServiceImpl implements IAiModelConfigService {
         if (provider == AiProviderEnum.OPENAI) {
             return testOpenAiCompatibleConfig(request, DEFAULT_OPENAI_BASE_URL);
         }
+        if (provider == AiProviderEnum.KIMI) {
+            return testOpenAiCompatibleConfig(request, DEFAULT_KIMI_BASE_URL);
+        }
+        if (provider == AiProviderEnum.WORKBUDDY2) {
+            if (StringUtils.isBlank(request.getBaseUrl())) {
+                return ModelConfigTestResponse.failure(null, null, "Base URL is required for WorkBuddy2.");
+            }
+            return testOpenAiCompatibleConfig(request, null);
+        }
         if (provider == AiProviderEnum.MINIMAX) {
             String baseUrl = trimToNull(request.getBaseUrl());
             if (StringUtils.isNotBlank(baseUrl) && StringUtils.containsIgnoreCase(baseUrl, "/anthropic")) {
@@ -300,7 +310,8 @@ public class AiModelConfigServiceImpl implements IAiModelConfigService {
      */
     private void normalizeRuntimeBaseUrl(AiRuntimeModel runtimeModel) {
         AiProviderEnum provider = AiProviderEnum.from(runtimeModel.getProvider());
-        if (provider != AiProviderEnum.OPENAI && provider != AiProviderEnum.CLAUDE && provider != AiProviderEnum.MINIMAX) {
+        if (provider != AiProviderEnum.OPENAI && provider != AiProviderEnum.CLAUDE && provider != AiProviderEnum.MINIMAX
+                && provider != AiProviderEnum.KIMI && provider != AiProviderEnum.WORKBUDDY2) {
             return;
         }
         runtimeModel.setBaseUrl(stripTrailingV1(runtimeModel.getBaseUrl()));
@@ -343,6 +354,12 @@ public class AiModelConfigServiceImpl implements IAiModelConfigService {
             runtimeModel.setBaseUrl(defaultValue(trimToNull(runtimeModel.getBaseUrl()), DEFAULT_MINIMAX_BASE_URL));
             return;
         }
+        if (provider == AiProviderEnum.KIMI) {
+            runtimeModel.setApiKey(defaultValue(trimToNull(runtimeModel.getApiKey()), trimToNull(System.getenv("MOONSHOT_API_KEY"))));
+            runtimeModel.setBaseUrl(defaultValue(trimToNull(runtimeModel.getBaseUrl()), trimToNull(System.getenv("MOONSHOT_BASE_URL"))));
+            runtimeModel.setBaseUrl(defaultValue(trimToNull(runtimeModel.getBaseUrl()), DEFAULT_KIMI_BASE_URL));
+            return;
+        }
         if (provider == AiProviderEnum.CLAUDE) {
             runtimeModel.setApiKey(defaultValue(trimToNull(runtimeModel.getApiKey()), trimToNull(System.getenv("ANTHROPIC_API_KEY"))));
             runtimeModel.setBaseUrl(defaultValue(trimToNull(runtimeModel.getBaseUrl()), trimToNull(System.getenv("ANTHROPIC_BASE_URL"))));
@@ -365,6 +382,9 @@ public class AiModelConfigServiceImpl implements IAiModelConfigService {
         AiProviderEnum provider = AiProviderEnum.from(runtimeModel.getProvider());
         if (provider == null) {
             throw new IllegalArgumentException("Unsupported provider: " + runtimeModel.getProvider());
+        }
+        if (provider == AiProviderEnum.WORKBUDDY2 && StringUtils.isBlank(runtimeModel.getBaseUrl())) {
+            throw new IllegalArgumentException("baseUrl is required for WorkBuddy2");
         }
         if (provider == AiProviderEnum.OPENAI || provider == AiProviderEnum.CLAUDE) {
             return;
@@ -507,7 +527,9 @@ public class AiModelConfigServiceImpl implements IAiModelConfigService {
         String baseUrl = StringUtils.defaultIfBlank(trimToNull(request.getBaseUrl()), defaultBaseUrl);
         String endpoint = appendPath(stripTrailingV1(baseUrl), "/v1/chat/completions");
         String apiKey = resolveTestApiKey(request);
-        if (StringUtils.isBlank(apiKey)) {
+        // WorkBuddy2 is a local OpenAI-compatible service and may not require an API key.
+        boolean apiKeyRequired = AiProviderEnum.from(request.getProvider()) != AiProviderEnum.WORKBUDDY2;
+        if (apiKeyRequired && StringUtils.isBlank(apiKey)) {
             return ModelConfigTestResponse.failure(endpoint, null, "API Key is required for the connection test.");
         }
 
@@ -523,14 +545,17 @@ public class AiModelConfigServiceImpl implements IAiModelConfigService {
             SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
             requestFactory.setConnectTimeout(10_000);
             requestFactory.setReadTimeout(20_000);
-            ResponseEntity<String> response = RestClient.builder()
+            RestClient.RequestBodySpec requestSpec = RestClient.builder()
                     .requestFactory(requestFactory)
                     .build()
                     .post()
                     .uri(URI.create(endpoint))
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON);
+            if (StringUtils.isNotBlank(apiKey)) {
+                requestSpec = requestSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
+            }
+            ResponseEntity<String> response = requestSpec
                     .body(payload)
                     .retrieve()
                     .toEntity(String.class);

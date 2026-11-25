@@ -277,6 +277,7 @@ export default {
   'setting.modelConfig.validation.provider': '공급자를 선택해 주세요',
   'setting.modelConfig.validation.model': '모델 이름 또는 ID를 입력해 주세요',
   'setting.modelConfig.validation.apiKey': 'API 키를 입력해 주세요',
+  'setting.modelConfig.validation.baseUrl': 'Base URL을 입력해 주세요',
   'setting.modelConfig.placeholder.name': '예: GPT-4o Dev',
   'setting.modelConfig.placeholder.provider': '공급자 선택',
   'setting.modelConfig.placeholder.model': '예: gpt-4o-mini',

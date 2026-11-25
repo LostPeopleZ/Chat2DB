@@ -6,7 +6,9 @@ public enum AiProviderEnum {
     OPENAI,
     CLAUDE,
     GEMINI,
-    MINIMAX;
+    MINIMAX,
+    KIMI,
+    WORKBUDDY2;
 
     public static AiProviderEnum from(String value) {
         if (value == null || value.trim().isEmpty()) {

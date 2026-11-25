@@ -274,6 +274,7 @@ export default {
   'setting.modelConfig.validation.provider': '请选择模型提供方',
   'setting.modelConfig.validation.model': '请输入模型名称/ID',
   'setting.modelConfig.validation.apiKey': '请输入 API Key',
+  'setting.modelConfig.validation.baseUrl': '请输入 Base URL',
   'setting.modelConfig.placeholder.name': '例如：GPT-4o 开发环境',
   'setting.modelConfig.placeholder.provider': '请选择模型提供方',
   'setting.modelConfig.placeholder.model': '例如：gpt-4o-mini',

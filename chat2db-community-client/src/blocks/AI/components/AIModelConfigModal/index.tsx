@@ -27,6 +27,8 @@ const providerOptions = [
   { label: 'Claude', value: 'CLAUDE' },
   { label: 'Gemini', value: 'GEMINI' },
   { label: 'MiniMax', value: 'MINIMAX' },
+  { label: 'Kimi', value: 'KIMI' },
+  { label: 'WorkBuddy2', value: 'WORKBUDDY2' },
 ];
 
 const emptyFormValues: IAIModelConfigSaveRequest = {
@@ -310,7 +312,8 @@ export default function AIModelConfigModal({ open, onClose, onChanged }: AIModel
                   required:
                     (currentProvider === 'OPENAI' ||
                       currentProvider === 'CLAUDE' ||
-                      currentProvider === 'MINIMAX') &&
+                      currentProvider === 'MINIMAX' ||
+                      currentProvider === 'KIMI') &&
                     !currentConfig?.hasApiKey,
                   message: i18n('setting.modelConfig.validation.apiKey'),
                 },
@@ -322,7 +325,16 @@ export default function AIModelConfigModal({ open, onClose, onChanged }: AIModel
                 visibilityToggle={false}
               />
             </Form.Item>
-            <Form.Item name="baseUrl" label={i18n('setting.modelConfig.baseUrl')}>
+            <Form.Item
+              name="baseUrl"
+              label={i18n('setting.modelConfig.baseUrl')}
+              rules={[
+                {
+                  required: currentProvider === 'WORKBUDDY2',
+                  message: i18n('setting.modelConfig.validation.baseUrl'),
+                },
+              ]}
+            >
               <Input autoComplete="off" placeholder={i18n('setting.modelConfig.placeholder.baseUrl')} />
             </Form.Item>
             <Form.Item name="projectId" label={i18n('setting.modelConfig.projectId')}>

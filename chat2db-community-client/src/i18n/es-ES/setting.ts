@@ -279,6 +279,7 @@ export default {
   'setting.modelConfig.validation.provider': 'Seleccione un proveedor',
   'setting.modelConfig.validation.model': 'Introduzca un nombre o ID de modelo',
   'setting.modelConfig.validation.apiKey': 'Introduzca una clave API',
+  'setting.modelConfig.validation.baseUrl': 'Introduzca la URL base',
   'setting.modelConfig.placeholder.name': 'p. ej., GPT-4o Dev',
   'setting.modelConfig.placeholder.provider': 'Seleccione un proveedor',
   'setting.modelConfig.placeholder.model': 'p. ej., gpt-4o-mini',

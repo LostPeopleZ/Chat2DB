@@ -279,6 +279,7 @@ export default {
   'setting.modelConfig.validation.provider': 'プロバイダーを選択してください',
   'setting.modelConfig.validation.model': 'モデル名または ID を入力してください',
   'setting.modelConfig.validation.apiKey': 'API Key を入力してください',
+  'setting.modelConfig.validation.baseUrl': 'Base URL を入力してください',
   'setting.modelConfig.placeholder.name': '例：GPT-4o 開発環境',
   'setting.modelConfig.placeholder.provider': 'プロバイダーを選択してください',
   'setting.modelConfig.placeholder.model': '例：gpt-4o-mini',
